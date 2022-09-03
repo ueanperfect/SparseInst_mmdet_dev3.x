@@ -11,10 +11,13 @@ from .mask_point_head import MaskPointHead
 from .maskiou_head import MaskIoUHead
 from .scnet_mask_head import SCNetMaskHead
 from .scnet_semantic_head import SCNetSemanticHead
+from .sparseInst_decoder_head import (BaseIAMDecoder,GroupInstanceBranch,GroupIAMDecoder,GroupInstanceSoftBranch)
+from .sparseInst_encoder_head import InstanceContextEncoder
 
 __all__ = [
     'FCNMaskHead', 'HTCMaskHead', 'FusedSemanticHead', 'GridHead',
     'MaskIoUHead', 'CoarseMaskHead', 'MaskPointHead', 'SCNetMaskHead',
     'SCNetSemanticHead', 'GlobalContextHead', 'FeatureRelayHead',
-    'DynamicMaskHead'
+    'DynamicMaskHead','BaseIAMDecoder','GroupIAMDecoder',
+    'GroupIAMDecoder','GroupInstanceSoftBranch','InstanceContextEncoder'
 ]

@@ -35,6 +35,7 @@ from .rpn_head import RPNHead
 from .sabl_retina_head import SABLRetinaHead
 from .solo_head import DecoupledSOLOHead, DecoupledSOLOLightHead, SOLOHead
 from .solov2_head import SOLOV2Head
+from .sparse_inst_head import SparseInstHead
 from .ssd_head import SSDHead
 from .tood_head import TOODHead
 from .vfnet_head import VFNetHead
@@ -55,5 +56,5 @@ __all__ = [
     'DeformableDETRHead', 'CenterNetHead', 'YOLOXHead', 'SOLOHead',
     'DecoupledSOLOHead', 'DecoupledSOLOLightHead', 'SOLOV2Head', 'LADHead',
     'TOODHead', 'MaskFormerHead', 'Mask2FormerHead', 'DDODHead',
-    'CenterNetUpdateHead'
+    'CenterNetUpdateHead','SparseInstHead'
 ]

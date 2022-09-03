@@ -11,6 +11,13 @@ from .misc import (center_of_mass, empty_instances, filter_scores_and_topk,
 from .panoptic_gt_processing import preprocess_panoptic_gt
 from .point_sample import (get_uncertain_point_coords_with_randomness,
                            get_uncertainty)
+from .sparseInst_tem_funcs import (c2_xavier_fill,c2_msra_fill,
+                                   _onnx_nested_tensor_from_tensor_list,
+                                   nested_tensor_from_tensor_list,
+                                   nested_masks_from_list,
+                                   is_dist_avail_and_initialized,
+                                   get_world_size,
+                                   aligned_bilinear,BitMasks)
 
 __all__ = [
     'gaussian_radius', 'gen_gaussian_target', 'make_divisible',
@@ -21,5 +28,8 @@ __all__ = [
     'center_of_mass', 'filter_scores_and_topk', 'flip_tensor',
     'generate_coordinate', 'levels_to_images', 'mask2ndarray', 'multi_apply',
     'select_single_mlvl', 'unmap', 'images_to_levels',
-    'samplelist_boxlist2tensor'
+    'samplelist_boxlist2tensor','c2_msra_fill','c2_xavier_fill',
+    '_onnx_nested_tensor_from_tensor_list','nested_tensor_from_tensor_list',
+    'nested_masks_from_list','is_dist_avail_and_initialized',
+    'get_world_size','aligned_bilinear','BitMasks'
 ]
