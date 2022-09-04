@@ -1,22 +1,13 @@
-# Copyright (c) OpenMMLab. All rights reserved.
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Tuple, Union
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
-from mmengine.structures import InstanceData
 from torch import Tensor
+from mmengine.structures import InstanceData
 from mmdet.registry import MODELS
 from mmdet.structures import SampleList
-from mmdet.utils import (ConfigType, InstanceList, OptConfigType, OptInstanceList, OptMultiConfig, reduce_mean)
-from ..utils import (BitMasks, masks_to_boxes)
-from ..utils import (unpack_gt_instances)
+from mmdet.utils import (ConfigType, InstanceList, OptInstanceList)
+from ..utils import (BitMasks, masks_to_boxes, rescoring_mask, unpack_gt_instances)
 from .base_mask_head import BaseMaskHead
-
-
-@torch.jit.script
-def rescoring_mask(scores, mask_pred, masks):
-    mask_pred_ = mask_pred.float()
-    return scores * ((masks * mask_pred_).sum([1, 2]) / (mask_pred_.sum([1, 2]) + 1e-6))
 
 
 @MODELS.register_module()
@@ -170,6 +161,7 @@ class SparseInstHead(BaseMaskHead):
     def get_targets(self, points: List[Tensor],
                     batch_gt_instances: InstanceList) -> int:
         pass
+
     def loss_by_feat(
             self,
             cls_scores: List[Tensor],

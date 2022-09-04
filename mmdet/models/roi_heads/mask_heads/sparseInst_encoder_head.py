@@ -4,11 +4,8 @@ from ...utils import c2_xavier_fill,c2_msra_fill,BitMasks
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import Conv2d, Linear, build_activation_layer
-from torch import Tensor
-import math
+from mmcv.cnn import Conv2d
 from mmdet.registry import MODELS
-
 
 class PyramidPoolingModule(nn.Module):
     def __init__(self, in_channels, channels=512, sizes=(1, 2, 3, 6)):
@@ -47,9 +44,9 @@ class InstanceContextEncoder(nn.Module):
         super().__init__()
         self.num_channels = num_channels
         self.in_features = in_features
-        '''
-        此处注意后期改写
-        '''
+
+        #TODO:please remenber to change the way of channel input
+
         self.in_channels = [channel for channel in input_shape]
         fpn_laterals = []
         fpn_outputs = []

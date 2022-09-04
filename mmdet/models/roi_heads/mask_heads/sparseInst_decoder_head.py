@@ -4,8 +4,10 @@ import torch.nn as nn
 from torch.nn import init
 import torch.nn.functional as F
 from mmdet.registry import MODELS
-from mmdet.models.utils.sparseInst_tem_funcs import c2_msra_fill, c2_xavier_fill,BitMasks
+from mmdet.models.utils.sparseInst_tem_funcs import c2_msra_fill, c2_xavier_fill
 from mmcv.cnn import Conv2d
+
+
 def _make_stack_3x3_convs(num_convs, in_channels, out_channels):
     convs = []
     for _ in range(num_convs):
@@ -15,8 +17,8 @@ def _make_stack_3x3_convs(num_convs, in_channels, out_channels):
         in_channels = out_channels
     return nn.Sequential(*convs)
 
-class InstanceBranch(nn.Module):
 
+class InstanceBranch(nn.Module):
     def __init__(self,
                  dim,
                  num_convs,
@@ -27,29 +29,24 @@ class InstanceBranch(nn.Module):
         super().__init__()
         # norm = cfg.MODEL.SPARSE_INST.DECODER.NORM
         self.num_classes = num_classes
-
         self.inst_convs = _make_stack_3x3_convs(num_convs, in_channels, dim)
         # iam prediction, a simple conv
         self.iam_conv = nn.Conv2d(dim, num_masks, 3, padding=1)
-
         # outputs
         self.cls_score = nn.Linear(dim, self.num_classes)
         self.mask_kernel = nn.Linear(dim, kernel_dim)
         self.objectness = nn.Linear(dim, 1)
-
         self.prior_prob = 0.01
         self._init_weights()
 
     def _init_weights(self):
         for m in self.inst_convs.modules():
-            if isinstance(m, nn.Conv2d):
-                c2_msra_fill(m)
+            if isinstance(m, nn.Conv2d): c2_msra_fill(m)
         bias_value = -math.log((1 - self.prior_prob) / self.prior_prob)
         for module in [self.iam_conv, self.cls_score]:
             init.constant_(module.bias, bias_value)
         init.normal_(self.iam_conv.weight, std=0.01)
         init.normal_(self.cls_score.weight, std=0.01)
-
         init.normal_(self.mask_kernel.weight, std=0.01)
         init.constant_(self.mask_kernel.bias, 0.0)
 
@@ -75,8 +72,8 @@ class InstanceBranch(nn.Module):
         pred_scores = self.objectness(inst_features)
         return pred_logits, pred_kernel, pred_scores, iam
 
-class MaskBranch(nn.Module):
 
+class MaskBranch(nn.Module):
     def __init__(self,
                  dim,
                  num_convs,
@@ -98,30 +95,28 @@ class MaskBranch(nn.Module):
         features = self.mask_convs(features)
         return self.projection(features)
 
+
 class GroupInstanceBranch(nn.Module):
     def __init__(self,
                  dim,
-            num_convs,
-            num_masks,
-            kernel_dim,
-            groups    ,
-            num_classes,
-            in_channels):
+                 num_convs,
+                 num_masks,
+                 kernel_dim,
+                 groups,
+                 num_classes,
+                 in_channels):
         super().__init__()
         self.num_groups = groups
         self.num_classes = num_classes
-
         self.inst_convs = _make_stack_3x3_convs(num_convs, in_channels, dim)
         # iam prediction, a group conv
         expand_dim = dim * self.num_groups
         self.iam_conv = nn.Conv2d(dim, num_masks * self.num_groups, 3, padding=1, groups=self.num_groups)
         # outputs
         self.fc = nn.Linear(expand_dim, expand_dim)
-
         self.cls_score = nn.Linear(expand_dim, self.num_classes)
         self.mask_kernel = nn.Linear(expand_dim, kernel_dim)
         self.objectness = nn.Linear(expand_dim, 1)
-
         self.prior_prob = 0.01
         self._init_weights()
 
@@ -166,21 +161,22 @@ class GroupInstanceBranch(nn.Module):
         pred_scores = self.objectness(inst_features)
         return pred_logits, pred_kernel, pred_scores, iam
 
+
 class GroupInstanceSoftBranch(GroupInstanceBranch):
     def __init__(self,
                  dim,
-            num_convs,
-            num_masks,
-            kernel_dim,
-            groups    ,
-            num_classes,
-            in_channels):
+                 num_convs,
+                 num_masks,
+                 kernel_dim,
+                 groups,
+                 num_classes,
+                 in_channels):
         super().__init__(
             dim=dim,
             num_convs=num_convs,
             num_masks=num_masks,
             kernel_dim=kernel_dim,
-            groups=groups    ,
+            groups=groups,
             num_classes=num_classes,
             in_channels=in_channels)
         self.softmax_bias = nn.Parameter(torch.ones([1, ]))
@@ -209,6 +205,7 @@ class GroupInstanceSoftBranch(GroupInstanceBranch):
         pred_scores = self.objectness(inst_features)
         return pred_logits, pred_kernel, pred_scores, iam
 
+
 @MODELS.register_module()
 class BaseIAMDecoder(nn.Module):
     def __init__(self,
@@ -233,9 +230,9 @@ class BaseIAMDecoder(nn.Module):
             num_classes,
             in_channels)
         self.mask_branch = MaskBranch(dim,
-            num_convs,
-            kernel_dim,
-            in_channels)
+                                      num_convs,
+                                      kernel_dim,
+                                      in_channels)
 
     @torch.no_grad()
     def compute_coordinates_linspace(self, x):
@@ -286,8 +283,8 @@ class BaseIAMDecoder(nn.Module):
             iam = F.interpolate(iam, scale_factor=self.scale_factor,
                                 mode='bilinear', align_corners=False)
             output['pred_iam'] = iam
-
         return output
+
 
 @MODELS.register_module()
 class GroupIAMDecoder(BaseIAMDecoder):
@@ -302,20 +299,19 @@ class GroupIAMDecoder(BaseIAMDecoder):
                  groups,
                  output_iam):
         super().__init__(
-             dim=dim,
-             num_convs=num_convs,
-             num_masks=num_masks,
-             kernel_dim=kernel_dim,
-             num_classes=num_classes,
-             num_channels=num_channels,
-             scale_factor=scale_factor,
-             output_iam=output_iam)
+            dim=dim,
+            num_convs=num_convs,
+            num_masks=num_masks,
+            kernel_dim=kernel_dim,
+            num_classes=num_classes,
+            num_channels=num_channels,
+            scale_factor=scale_factor,
+            output_iam=output_iam)
         in_channels = num_channels + 2
         self.inst_branch = GroupInstanceBranch(dim,
-            num_convs,
-            num_masks,
-            kernel_dim,
-            groups    ,
-            num_classes,
-            in_channels)
-
+                                               num_convs,
+                                               num_masks,
+                                               kernel_dim,
+                                               groups,
+                                               num_classes,
+                                               in_channels)

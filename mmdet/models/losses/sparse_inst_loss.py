@@ -1,5 +1,3 @@
-# Copyright (c) Tianheng Cheng and its affiliates. All Rights Reserved
-import torch
 import torch.nn as nn
 from torch.cuda.amp import autocast
 from scipy.optimize import linear_sum_assignment
@@ -7,15 +5,15 @@ from mmdet.registry import MODELS
 from mmdet.models.utils import nested_masks_from_list, is_dist_avail_and_initialized, get_world_size
 import torch
 from torch.nn import functional as F
-from mmdet.utils import (ConfigType, InstanceList, OptConfigType,
-                         OptInstanceList, OptMultiConfig, reduce_mean)
+from mmdet.utils import ConfigType
+
 
 def sigmoid_focal_loss(
-    inputs: torch.Tensor,
-    targets: torch.Tensor,
-    alpha: float = -1,
-    gamma: float = 2,
-    reduction: str = "none",
+        inputs: torch.Tensor,
+        targets: torch.Tensor,
+        alpha: float = -1,
+        gamma: float = 2,
+        reduction: str = "none",
 ) -> torch.Tensor:
     """
     Loss used in RetinaNet for dense detection: https://arxiv.org/abs/1708.02002.
@@ -65,13 +63,17 @@ def compute_mask_iou(inputs, targets):
     union = targets.sum(-1) + binarized_inputs.sum(-1) - intersection
     score = intersection / (union + 1e-6)
     return score
+
+
 def dice_score(inputs, targets):
     inputs = inputs.sigmoid()
     numerator = 2 * torch.matmul(inputs, targets.t())
     denominator = (
-        inputs * inputs).sum(-1)[:, None] + (targets * targets).sum(-1)
+                          inputs * inputs).sum(-1)[:, None] + (targets * targets).sum(-1)
     score = numerator / (denominator + 1e-4)
     return score
+
+
 def dice_loss(inputs, targets, reduction='sum'):
     inputs = inputs.sigmoid()
     assert inputs.shape == targets.shape
@@ -82,21 +84,20 @@ def dice_loss(inputs, targets, reduction='sum'):
         return loss
     return loss.sum()
 
+
 @MODELS.register_module()
 class SparseInstCriterion(nn.Module):
-    # This part is partially derivated from: https://github.com/facebookresearch/detr/blob/main/models/detr.py
-
     def __init__(self,
-                 matcher    : ConfigType,
-                 loss_cfg   : ConfigType,
+                 matcher: ConfigType,
+                 loss_cfg: ConfigType,
                  num_classes: int,
-                 items      : tuple,
+                 items: tuple,
                  ):
         super().__init__()
         self.matcher = MODELS.build(matcher)
         self.weight_dict = self.get_weight_dict(loss_cfg)
-        self.losses = items
         self.num_classes = num_classes
+        self.losses = items
 
     def get_weight_dict(self, loss_cfg):
         losses = ("loss_ce", "loss_mask", "loss_dice", "loss_objectness")
@@ -113,14 +114,14 @@ class SparseInstCriterion(nn.Module):
     def _get_src_permutation_idx(self, indices):
         # permute predictions following indices
         batch_idx = torch.cat([torch.full_like(src, i)
-                              for i, (src, _) in enumerate(indices)])
+                               for i, (src, _) in enumerate(indices)])
         src_idx = torch.cat([src for (src, _) in indices])
         return batch_idx, src_idx
 
     def _get_tgt_permutation_idx(self, indices):
         # permute targets following indices
         batch_idx = torch.cat([torch.full_like(tgt, i)
-                              for i, (_, tgt) in enumerate(indices)])
+                               for i, (_, tgt) in enumerate(indices)])
         tgt_idx = torch.cat([tgt for (_, tgt) in indices])
         return batch_idx, tgt_idx
 
@@ -129,7 +130,7 @@ class SparseInstCriterion(nn.Module):
         src_logits = outputs['pred_logits']
         idx = self._get_src_permutation_idx(indices)
         target_classes_o = torch.cat([t["labels"][J]
-                                     for t, (_, J) in zip(targets, indices)])
+                                      for t, (_, J) in zip(targets, indices)])
         target_classes = torch.full(src_logits.shape[:2], self.num_classes,
                                     dtype=torch.int64, device=src_logits.device)
         target_classes[idx] = target_classes_o
@@ -216,7 +217,7 @@ class SparseInstCriterion(nn.Module):
     def forward(self, outputs, targets, input_shape):
 
         outputs_without_aux = {k: v for k,
-                               v in outputs.items() if k != 'aux_outputs'}
+                                        v in outputs.items() if k != 'aux_outputs'}
 
         # Retrieve the matching between the outputs of the last layer and the targets
         indices = self.matcher(outputs_without_aux, targets, input_shape)
@@ -240,15 +241,13 @@ class SparseInstCriterion(nn.Module):
 
         return losses
 
+
 @MODELS.register_module()
 class SparseInstMatcherV1(nn.Module):
-
-    def __init__(self,
-                 alpha,
-                 beta):
+    def __init__(self, alpha, beta):
         super().__init__()
         self.alpha = alpha
-        self.beta  = beta
+        self.beta = beta
         self.mask_score = dice_score
 
     @torch.no_grad()
@@ -295,12 +294,10 @@ class SparseInstMatcherV1(nn.Module):
             indices.append(inds)
         return [(torch.as_tensor(i, dtype=torch.int64), torch.as_tensor(j, dtype=torch.int64)) for i, j in indices]
 
+
 @MODELS.register_module()
 class SparseInstMatcher(nn.Module):
-
-    def __init__(self,
-                 alpha,
-                 beta):
+    def __init__(self, alpha, beta):
         super().__init__()
         self.alpha = alpha
         self.beta = beta
@@ -339,5 +336,6 @@ class SparseInstMatcher(nn.Module):
             # hungarian matching
             sizes = [len(v["masks"]) for v in targets]
             indices = [linear_sum_assignment(c[i], maximize=True) for i, c in enumerate(C.split(sizes, -1))]
-            indices = [(torch.as_tensor(i, dtype=torch.int64), torch.as_tensor(j, dtype=torch.int64)) for i, j in indices]
+            indices = [(torch.as_tensor(i, dtype=torch.int64), torch.as_tensor(j, dtype=torch.int64)) for i, j in
+                       indices]
             return indices

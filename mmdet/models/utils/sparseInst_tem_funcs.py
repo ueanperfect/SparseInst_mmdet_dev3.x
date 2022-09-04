@@ -1,3 +1,4 @@
+# TODO:please sent this additional function to the place where it should be.
 import torch
 from torch import Tensor
 import torch.distributed as dist
@@ -5,6 +6,25 @@ import torch.nn.functional as F
 import torchvision
 import torch.nn as nn
 from typing import Optional, List
+
+class BitMasks():
+    # TODO:convert BitmapMasks to tensor format BitMasks
+    def __init__(self, bitmapMasks, device):
+        self.device = device
+        self.tensor = self.BitmapMasks2Tensor(bitmapMasks)
+        self.image_size = self.tensor[0].shape
+
+    def BitmapMasks2Tensor(self, bitmapMasks):
+        tensor_mask = torch.from_numpy(bitmapMasks.masks.astype(bool)).to(self.device)
+        tensor_value = tensor_mask
+        return tensor_value
+
+    def __len__(self):
+        return len(self.tensor)
+@torch.jit.script
+def rescoring_mask(scores, mask_pred, masks):
+    mask_pred_ = mask_pred.float()
+    return scores * ((masks * mask_pred_).sum([1, 2]) / (mask_pred_.sum([1, 2]) + 1e-6))
 
 def c2_xavier_fill(module: nn.Module) -> None:
     """
@@ -18,7 +38,6 @@ def c2_xavier_fill(module: nn.Module) -> None:
     # corresponds to kaiming_uniform_ in PyTorch
     nn.init.kaiming_uniform_(module.weight, a=1)
     if module.bias is not None:
-
         nn.init.constant_(module.bias, 0)
 
 def c2_msra_fill(module: nn.Module) -> None:
@@ -29,11 +48,8 @@ def c2_msra_fill(module: nn.Module) -> None:
     Args:
         module (torch.nn.Module): module to initialize.
     """
-    # pyre-fixme[6]: For 1st param expected `Tensor` but got `Union[Module, Tensor]`.
     nn.init.kaiming_normal_(module.weight, mode="fan_out", nonlinearity="relu")
     if module.bias is not None:
-        # pyre-fixme[6]: Expected `Tensor` for 1st param but got `Union[nn.Module,
-        #  torch.Tensor]`.
         nn.init.constant_(module.bias, 0)
 
 def _max_by_axis(the_list):
@@ -73,7 +89,6 @@ def _onnx_nested_tensor_from_tensor_list(tensor_list: List[Tensor]) -> NestedTen
                                             for img in tensor_list]).to(torch.float32)).to(torch.int64)
         max_size.append(max_size_i)
     max_size = tuple(max_size)
-
     # work around for
     # pad_img[: img.shape[0], : img.shape[1], : img.shape[2]].copy_(img)
     # m[: img.shape[1], :img.shape[2]] = False
@@ -93,6 +108,7 @@ def _onnx_nested_tensor_from_tensor_list(tensor_list: List[Tensor]) -> NestedTen
     mask = torch.stack(padded_masks)
 
     return NestedTensor(tensor, mask=mask)
+
 def nested_tensor_from_tensor_list(tensor_list: List[Tensor]):
     # TODO make this more general
     if tensor_list[0].ndim == 3:
@@ -116,6 +132,7 @@ def nested_tensor_from_tensor_list(tensor_list: List[Tensor]):
     else:
         raise ValueError('not supported')
     return NestedTensor(tensor, mask)
+
 def nested_masks_from_list(tensor_list: List[Tensor], input_shape=None):
     if tensor_list[0].ndim == 3:
         dim_size = sum([img.shape[0] for img in tensor_list])
@@ -139,16 +156,19 @@ def nested_masks_from_list(tensor_list: List[Tensor], input_shape=None):
     else:
         raise ValueError('not supported')
     return NestedTensor(tensor, mask)
+
 def is_dist_avail_and_initialized():
     if not dist.is_available():
         return False
     if not dist.is_initialized():
         return False
     return True
+
 def get_world_size():
     if not is_dist_avail_and_initialized():
         return 1
     return dist.get_world_size()
+
 def aligned_bilinear(tensor, factor):
     # borrowed from Adelaidet: https://github1s.com/aim-uofa/AdelaiDet/blob/HEAD/adet/utils/comm.py
     assert tensor.dim() == 4
@@ -174,21 +194,7 @@ def aligned_bilinear(tensor, factor):
 
     return tensor[:, :, :oh - 1, :ow - 1]
 
-class BitMasks():
-    def __init__(self,bitmapMasks,device):
-        self.device = device
-        self.tensor = self.convertbitmapMasks2torchtensor(bitmapMasks)
-        self.image_size = self.tensor[0].shape
-
-    def convertbitmapMasks2torchtensor(self,bitmapMasks):
-        tensor_mask  = torch.from_numpy(bitmapMasks.masks.astype(bool)).to(self.device)
-        tensor_value = tensor_mask
-        return tensor_value
-
-    def __len__(self):
-        return len(self.tensor)
-
-def masks_to_boxes(masks: torch.Tensor) -> torch.Tensor:
+def masks_to_boxes(masks: Tensor) -> Tensor:
     """
     Compute the bounding boxes around the provided masks.
 
@@ -210,7 +216,7 @@ def masks_to_boxes(masks: torch.Tensor) -> torch.Tensor:
     bounding_boxes = torch.zeros((n, 4), device=masks.device, dtype=torch.float)
 
     for index, mask in enumerate(masks):
-        if torch.sum(mask)==0:
+        if torch.sum(mask) == 0:
             continue
         else:
             y, x = torch.where(mask != 0)
@@ -219,3 +225,5 @@ def masks_to_boxes(masks: torch.Tensor) -> torch.Tensor:
             bounding_boxes[index, 2] = torch.max(x)
             bounding_boxes[index, 3] = torch.max(y)
     return bounding_boxes
+
+
