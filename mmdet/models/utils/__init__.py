@@ -17,7 +17,7 @@ from .sparseInst_tem_funcs import (c2_xavier_fill,c2_msra_fill,
                                    nested_masks_from_list,
                                    is_dist_avail_and_initialized,
                                    get_world_size,
-                                   aligned_bilinear,BitMasks)
+                                   aligned_bilinear,BitMasks,masks_to_boxes)
 
 __all__ = [
     'gaussian_radius', 'gen_gaussian_target', 'make_divisible',
@@ -31,5 +31,5 @@ __all__ = [
     'samplelist_boxlist2tensor','c2_msra_fill','c2_xavier_fill',
     '_onnx_nested_tensor_from_tensor_list','nested_tensor_from_tensor_list',
     'nested_masks_from_list','is_dist_avail_and_initialized',
-    'get_world_size','aligned_bilinear','BitMasks'
+    'get_world_size','aligned_bilinear','BitMasks','masks_to_boxes'
 ]

@@ -16,7 +16,6 @@ model = dict(
         norm_eval=True,
         style='pytorch',
         init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),
-    bbox_head=None,
     mask_head=dict(
         type='SparseInstHead',
         num_classes=80,
@@ -57,5 +56,7 @@ model = dict(
         )
     ),
     train_cfg=dict(a=1),
-    test_cfg=dict(b=1)
+    test_cfg=dict(cls_threshold=0.005,
+                  mask_threshold = 0.45,
+                  max_detections = 100)
 )

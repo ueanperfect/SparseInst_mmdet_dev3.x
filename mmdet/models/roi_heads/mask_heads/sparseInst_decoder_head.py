@@ -6,8 +6,6 @@ import torch.nn.functional as F
 from mmdet.registry import MODELS
 from mmdet.models.utils.sparseInst_tem_funcs import c2_msra_fill, c2_xavier_fill,BitMasks
 from mmcv.cnn import Conv2d
-
-
 def _make_stack_3x3_convs(num_convs, in_channels, out_channels):
     convs = []
     for _ in range(num_convs):

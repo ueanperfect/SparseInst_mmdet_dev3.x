@@ -12,7 +12,6 @@ class SparseInst(SingleStageInstanceSegmentor):
     Transformers <https://arxiv.org/pdf/2005.12872>`_"""
     def __init__(self,
                  backbone: ConfigType,
-                 bbox_head: None,
                  mask_head: ConfigType,
                  train_cfg: OptConfigType = None,
                  test_cfg: OptConfigType = None,
