@@ -15,7 +15,7 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description='MMDet test (and eval) a model')
     parser.add_argument('--config', default='configs/sparse_inst/sparse-inst_r50_x1_coco.py',help='test config file path')
-    parser.add_argument('--checkpoint', help='checkpoint file')
+    parser.add_argument('--checkpoint',default='SparseInst_testfiles/sparse_inst_r50_base_mmdet.pth',help='checkpoint file')
     parser.add_argument(
         '--work-dir',
         help='the directory to save the file containing evaluation metrics')
